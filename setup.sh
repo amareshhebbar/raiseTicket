@@ -1,4 +1,6 @@
 set -e 
+chmod -R +x raiseticket/
+
 if ! command -v ollama &> /dev/null; then
     echo "RAISETICKET:: OLLAMA NOT FOUND"
     echo "RAISETICKET:: INSTALLING OLLAMA"
@@ -22,6 +24,6 @@ echo "RAISETICKET:: PULLING FIX AGENT MODEL --QWEN2.5 CODER:7B"
 ollama pull qwen2.5-coder:7b
 
 echo
-echo "RAISETICKET:: DONE...VERIFY WITH PYTHON `src/check_environment.py`"
+echo "RAISETICKET:: DONE...VERIFY WITH PYTHON `python3 raiseticket/check_env.py`"
 
  
