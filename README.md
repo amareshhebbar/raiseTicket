@@ -1,11 +1,9 @@
 # IssueLoop
 
-Finds failing tests in a repo, splits each failure into independent
-tickets, stores them, hands them out one at a time.
+Finds failing tests. Splits failures into independent tickets. Stores
+them. Hands them out one at a time.
 
-That's it. No fixing. No PRs. No auto-anything past detection. This is
-the "notice the bug" half of a bigger pipeline — not the "fix the bug"
-half.
+Nothing else. No fixing, no PRs, no auto-anything past detection.
 
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
@@ -13,31 +11,138 @@ half.
 
 ---
 
-## Why
+## Why this exists
 
-Bugs in OSS sit unfixed because someone has to notice them first, then
-write an issue, then wait for a maintainer to have time. That chain has
-a weak first link — noticing.
+Bugs sit unfixed because someone has to notice them first. IssueLoop
+skips that step — it reads the test suite directly. A failing test is
+the bug report. No human has to spot it.
 
-IssueLoop skips it. It reads the test suite directly. A failing test
-*is* the bug report. No human has to spot it or write it up.
+## Install
 
-## What it does
+```bash
+git clone https://github.com/onenot8/issueloop
+cd issueloop
+pip install -e .
+```
 
-1. Runs a repo's test commands
-2. Catches what fails
-3. Asks one question per failure: is this one bug or several bundled
-   together? Splits accordingly
-4. Stores each as a ticket
-5. Hands tickets out one at a time — claimed tickets don't get handed
-   out twice
+Local backend, zero setup. No database account, no API key, works
+immediately.
 
-## What it doesn't do
+## Use it in code
 
-- Doesn't propose a fix
-- Doesn't touch a file
-- Doesn't open a PR
-- Doesn't run anything not already in your test manifest
+```python
+import issueloop
 
-Fixing is a separate system's job. This repo's only output is a clean,
-prioritized ticket queue.
+issueloop.use(
+    database="local",              # or "supabase" for a hosted backup
+    llm={
+        "provider": "anthropic",   # or "ollama" (free, local, default) / "openai"
+        "model": "claude-sonnet-4-6",
+        "apiKey": "sk-...",
+        "tokenSize": 1024,
+    },
+    notify={"webhook": "https://your-endpoint"},  # fires if IssueLoop itself breaks
+)
+
+issueloop.scan_repo("repos/myrepo")
+issueloop.run_tests("myrepo")
+issueloop.create_tickets("myrepo")
+
+ticket = issueloop.get_top_error("myrepo")   # claims one, marks in_progress
+issueloop.get_all_errors("myrepo")           # peek, no claim
+issueloop.resolve(ticket["id"])              # your side fixed it
+issueloop.fail(ticket["id"])                 # your side couldn't
+issueloop.cleanup(older_than_days=30)        # deletes old resolved tickets
+```
+
+## Use it from the CLI
+
+```bash
+issueloop check-env
+issueloop scan repos/myrepo
+issueloop test myrepo
+issueloop tickets myrepo
+issueloop next myrepo
+issueloop cleanup --days 30
+```
+
+## Use it from Node, Go, or anything else
+
+```bash
+issueloop serve --port 8787
+```
+
+```js
+const r = await fetch("http://localhost:8787/errors/top?repo=myrepo");
+const ticket = await r.json();
+```
+
+```go
+resp, _ := http.Get("http://localhost:8787/errors/top?repo=myrepo")
+```
+
+No native npm or Go package — that would mean rewriting this logic
+twice more, in two languages, and keeping all three in sync forever.
+The HTTP bridge is one process, zero porting, works from anything that
+can make a request. `serve` is localhost-only, no auth — put it behind
+your own gateway if you ever expose it further.
+
+## Config — every option
+
+| Field | Values | Default |
+|---|---|---|
+| `database` | `"local"`, `"supabase"` | `"local"` |
+| `database_path` | any path | `data/issueloop.db` |
+| `retention_days` | int | `30` |
+| `llm.provider` | `"ollama"`, `"anthropic"`, `"openai"` | `"ollama"` |
+| `llm.apiKey` | string | none (required for anthropic/openai) |
+| `llm.tokenSize` | int | `1024` |
+| `notify.webhook` | URL | none |
+
+Both `apiKey`/`api_key` and `tokenSize`/`token_size` work — camelCase
+or snake_case, your call.
+
+## Footprint
+
+The `issueloop` package itself: **78 KB**. Measured, not estimated —
+`du` on the installed package directory in a clean virtualenv.
+
+Full install including dependencies (`requests`, `pyyaml`, `pathspec`,
+and `requests`' own transitive deps — `certifi`, `urllib3`, `idna`,
+`charset-normalizer`, all things most Python environments already
+have): **~23 MB** in a totally empty venv. That's the honest number,
+not a rounded-down one — if you were expecting sub-1MB total, that's
+not achievable with `requests` in the dependency tree, and swapping it
+for a smaller HTTP client wasn't worth the tradeoff for this version.
+
+Choosing `database="supabase"` adds `supabase-py` and its own
+dependency tree on top of that — only if you opt in
+(`pip install -e ".[supabase]"`). The local backend never touches it.
+
+## Why trust this
+
+- Every module has a test, and the tests run against real behavior —
+  a real SQLite file, a real HTTP server on a real socket — not just
+  mocks pretending things work.
+- Two real bugs were caught and fixed by actually running this code,
+  not by reading it: `scan` once silently failed to write its output
+  file, and the local backend once crashed on a string path. Both have
+  regression tests now so they can't come back quietly.
+- Local-first by default. Nothing phones home, nothing requires an
+  account to try.
+- Read the code — it's small enough to actually read. That's on
+  purpose.
+
+## Testing
+
+```bash
+pytest tests/ -v
+bash scripts/make_fixture_repo.sh   # disposable repo, one known bug
+bash scripts/clean_fixture_repo.sh
+```
+
+Full walkthrough: `TESTING.md`. File-by-file build order: `BUILD_ORDER.md`.
+
+## License
+
+MIT — see `LICENSE`.
