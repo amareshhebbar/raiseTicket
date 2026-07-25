@@ -1,29 +1,29 @@
 set -e 
-chmod -R +x raiseticket/
+chmod -R +x issueloop/
 
 if ! command -v ollama &> /dev/null; then
-    echo "RAISETICKET:: OLLAMA NOT FOUND"
-    echo "RAISETICKET:: INSTALLING OLLAMA"
+    echo "ISSUELOOP:: OLLAMA NOT FOUND"
+    echo "ISSUELOOP:: INSTALLING OLLAMA"
     curl -fsSL https://ollama.com/install.sh | sh
 else
-    echo "RAISETICKET:: OLLAMA ALREADY INSTALLED"
+    echo "ISSUELOOP:: OLLAMA ALREADY INSTALLED"
 fi
 
 if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-    echo "RAISETICKET:: STARTING OLLAMA SERVE IN THE BACKGROUND"
+    echo "ISSUELOOP:: STARTING OLLAMA SERVE IN THE BACKGROUND"
     nonup ollama serve > /tmp/ollama.log 2?&1; 
     sleep 3
 else 
-    echo "RAISETICKET:: OLLAMA IS ALREADY RUNNING"
+    echo "ISSUELOOP:: OLLAMA IS ALREADY RUNNING"
 fi
 
-echo "RAISETICKET:: PULLING EMBEDDING MODEL -- NOMIC EMBED TEXT"
+echo "ISSUELOOP:: PULLING EMBEDDING MODEL -- NOMIC EMBED TEXT"
 ollama pull nomic-embed-text
 
-echo "RAISETICKET:: PULLING FIX AGENT MODEL --QWEN2.5 CODER:7B"
+echo "ISSUELOOP:: PULLING FIX AGENT MODEL --QWEN2.5 CODER:7B"
 ollama pull qwen2.5-coder:7b
 
 echo
-echo "RAISETICKET:: DONE...VERIFY WITH PYTHON `python3 raiseticket/check_env.py`"
+echo "ISSUELOOP:: DONE...VERIFY WITH PYTHON `python3 i/check_env.py`"
 
  
