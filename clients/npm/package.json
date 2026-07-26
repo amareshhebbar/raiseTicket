@@ -1,0 +1,16 @@
+{
+  "name": "issueloop-client",
+  "version": "0.1.0",
+  "description": "JS/TS client for IssueLoop's local HTTP bridge (issueloop serve). Not a reimplementation — talks to a running Python issueloop process.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "license": "MIT",
+  "keywords": ["issueloop", "tickets", "testing"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/onenot8/issueloop"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
