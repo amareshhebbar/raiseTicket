@@ -1,10 +1,9 @@
-
 import argparse
 import json
 import sys
 
 import issueloop
-from . import check_environment
+from . import check_env
 
 
 def main():
@@ -35,7 +34,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == "check-env":
-        return check_environment.main()
+        return check_env.main()
 
     if args.command == "scan":
         inventory = issueloop.scan_repo(args.repo_path)

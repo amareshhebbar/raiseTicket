@@ -1,0 +1,10 @@
+requests
+pyyaml
+pathspec
+
+[dev]
+pytest
+
+[supabase]
+supabase
+python-dotenv

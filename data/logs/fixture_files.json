@@ -1,0 +1,21 @@
+{
+  "repo_path": "/home/gvamaresh/delete_this_2/issueLoop/repos/fixture",
+  "file_count": 2,
+  "language_breakdown": {
+    "python": 2
+  },
+  "files": [
+    {
+      "path": "calc.py",
+      "ext": ".py",
+      "language": "python",
+      "size_bytes": 52
+    },
+    {
+      "path": "test_calc.py",
+      "ext": ".py",
+      "language": "python",
+      "size_bytes": 64
+    }
+  ]
+}

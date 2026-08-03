@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 import uuid
 
@@ -18,20 +19,35 @@ Exit code: {exit_code}
 Stderr (tail): {stderr_tail}
 """
 
+_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
+
+
+def _strip_code_fences(raw: str) -> str:
+    return _FENCE_RE.sub("", raw).strip()
+
+
+def _fallback_summary(entry: dict) -> str:
+    return f"'{entry['command']}' failed with exit code {entry['exit_code']}"
+
 
 def _split_errors(entry: dict):
     prompt = SPLIT_PROMPT.format(
         command=entry["command"], exit_code=entry["exit_code"], stderr_tail=entry["stderr_tail"],
     )
     raw = llm.chat(prompt)
+    cleaned = _strip_code_fences(raw)
     try:
-        parsed = json.loads(raw)
-        summaries = [item["summary"] for item in parsed]
+        parsed = json.loads(cleaned)
+        summaries = [
+            item["summary"]
+            for item in parsed
+            if isinstance(item, dict) and item.get("summary")
+        ]
         if summaries:
             return summaries
     except (json.JSONDecodeError, KeyError, TypeError):
         pass
-    return [raw.strip()[:500]]
+    return [_fallback_summary(entry)]
 
 
 def create_tickets_for_repo(repo_name: str):

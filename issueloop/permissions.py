@@ -1,65 +1,83 @@
+import json
+import re
 import subprocess
 from datetime import datetime, timezone
-import json
 from pathlib import Path
-import re
+from typing import Optional
+
 import yaml
 
-ROOT=Path(__file__).resolve().parent.parent
-PERMISSION_PATH=ROOT/"config"/"permission.yaml"
-AUDIT_LOG=ROOT/"data"/"logs"/"permission_audit.jsonl"
+ROOT = Path(__file__).resolve().parent.parent
+PERMISSION_PATH = ROOT / "config" / "permission.yaml"
+MANIFEST_PATH = ROOT / "data" / "test_manifest.json"
+AUDIT_LOG = ROOT / "data" / "logs" / "permission_audit.jsonl"
+
 
 class PermissionDenied(Exception):
     pass
 
-def _load_config():
-    if not PERMISSION_PATH.exists():
-        return {"global": {"allowed_patterns": []}, "per_repo": {}}
-    return yaml.safe_load(PERMISSION_PATH.read_text()) or{}
 
-def _test_manifest_commands(repo:str):
-    manifest_path=ROOT/"data"/"test_manifest.json"
-    if not manifest_path.exists():
+def _load_config() -> dict:
+    if not PERMISSION_PATH.exists():
+        return {"global": {"allowed_exact": [], "allowed_patterns": []}, "per_repo": {}}
+    return yaml.safe_load(PERMISSION_PATH.read_text()) or {}
+
+
+def _test_manifest_commands(repo: str) -> set[str]:
+    if not MANIFEST_PATH.exists():
         return set()
-    manifest=json.loads(manifest_path.read_text())
-    for en in manifest.get("repos", []):
+    manifest = json.loads(MANIFEST_PATH.read_text())
+    for entry in manifest.get("repos", []):
         if entry["name"] == repo:
-            return {t["command"] for t in en["test_types"]}
+            return {t["command"] for t in entry.get("test_types", [])}
     return set()
 
-def _audit(event: st, repo:str ,cmd:str, detail:str=""):
+
+def _audit(event: str, repo: str, command: str, detail: str = "") -> None:
     AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
     with AUDIT_LOG.open("a") as f:
         f.write(json.dumps({
-            "ts": datetime/now(timezone.utc).isoformat(),
+            "ts": datetime.now(timezone.utc).isoformat(),
             "event": event,
             "repo": repo,
-            "command":cmd,
-            detail: detail
+            "command": command,
+            "detail": detail,
         }) + "\n")
-    
-def check_permission(cmd: str, repo: str):
-    cfg=_load_config()
-    g = cfg.get("global") or {}
-    r=(cfg.get("per_repo") or {}).get(repo, {})
-    
-    allowed_exact=set(g.get("allowed_exact", [])) or set(r.get("allowed_exact", []))
-    allowed_exact |= _test_manifest_commands(repo)
-    allowed_patterns = list(g.get("allowed_patterns", [])) + lisr(r.get("allowed_patterns", []))
-    if cmd in allowed_exact:
-        _audit("allowed_exact", repo, command=cmd)
-        return True
-    for p in allowed_exact:
-        if re.fullmatch(p, cmd):
-            _audit("allowed_pattern", repo, command=cmd, detail=p)
-            return True
-        
 
-def run_guarded(cmd: str, repo: str, cmd:Path ,timeout: int=600):
+
+def check_permission(cmd: str, repo: str) -> bool:
+    cfg = _load_config()
+    g = cfg.get("global") or {}
+    r = (cfg.get("per_repo") or {}).get(repo, {})
+
+    allowed_exact = set(g.get("allowed_exact", [])) | set(r.get("allowed_exact", []))
+    allowed_exact |= _test_manifest_commands(repo)
+    allowed_patterns = list(g.get("allowed_patterns", [])) + list(r.get("allowed_patterns", []))
+
+    if cmd in allowed_exact:
+        _audit("allowed_exact", repo, cmd)
+        return True
+
+    for pattern in allowed_patterns:
+        if re.fullmatch(pattern, cmd):
+            _audit("allowed_pattern", repo, cmd, detail=pattern)
+            return True
+
+    _audit("denied", repo, cmd)
+    return False
+
+
+def run_guarded(cmd: str, repo: str, cwd: Optional[Path] = None, timeout: int = 600) -> subprocess.CompletedProcess:
     if not check_permission(cmd, repo):
         raise PermissionDenied(
-            f"'{command}' is not allowlisted for repo '{repo}'. "
-            f"Add it to config/permissions.yaml if it should be allowed."
+            f"'{cmd}' is not allowlisted for repo '{repo}'. "
+            f"Add it to config/permission.yaml if it should be allowed."
         )
     return subprocess.run(
-        command=cmd ,shell=True ,cwd=str(cwd), capture_output=True, text=True, timeout=timeout    )
+        cmd,
+        shell=True,
+        cwd=str(cwd) if cwd else None,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )

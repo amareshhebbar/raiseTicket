@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "issueloop"
+version = "0.2.0"
+description = "Finds failing tests, splits failures into independent tickets, stores them, hands them out one at a time."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "onenot8" }]
+dependencies = [
+    "requests",
+    "pyyaml",
+    "pathspec",
+]
+
+[project.optional-dependencies]
+supabase = [
+    "supabase",
+    "python-dotenv",
+]
+dev = [
+    "pytest",
+]
+
+[project.scripts]
+issueloop = "issueloop.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["issueloop*"]

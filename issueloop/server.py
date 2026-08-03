@@ -1,4 +1,3 @@
-
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -48,11 +47,9 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(400, {"error": "expected JSON body with an 'id' field"})
 
     def log_message(self, format, *args):
-        pass  # quiet by default
-
-    def log_message(self, format, *args):
         pass
-    
+
+
 def serve(port: int = 8787):
     server = HTTPServer(("127.0.0.1", port), _Handler)
     print(f"issueloop serving on http://127.0.0.1:{port}  (Ctrl+C to stop)")

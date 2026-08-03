@@ -1,0 +1,21 @@
+{
+  "repos": [
+    {
+      "name": "fixture",
+      "url": "local",
+      "local_path": "./repos/fixture",
+      "language": "python",
+      "framework": "none",
+      "default_branch": "main",
+      "test_types": [
+        {
+          "id": "unit_tests",
+          "description": "one test, one intentional bug",
+          "command": "python3 -m pytest test_calc.py -q",
+          "priority": 1,
+          "blocking": true
+        }
+      ]
+    }
+  ]
+}
