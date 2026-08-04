@@ -2,12 +2,17 @@ export interface Ticket {
   id: string;
   repo: string;
   priority: "blocking" | "high" | "normal" | "low";
-  status: "pending" | "in_progress" | "done" | "failed";
+  status: "pending" | "in_progress" | "blocked" | "done" | "failed" | "needs_human";
   error_summary: string;
   raw_log_ref: string;
   command: string | null;
   test_id: string | null;
+  attempts: number;
+  escalation_summary: string | null;
+  proposed_fix: string | null;
   created_at: string;
+  resolved_at: string | null;
+  dispensed_at: string | null;
 }
 
 export declare class IssueLoop {
@@ -17,4 +22,50 @@ export declare class IssueLoop {
   getAllErrors(repo: string): Promise<Ticket[]>;
   resolve(ticketId: string): Promise<{ status: string }>;
   fail(ticketId: string): Promise<{ status: string }>;
+
+  scanRepo(params?: Record<string, any>): Promise<any>;
+  getFileInventory(params?: Record<string, any>): Promise<any>;
+  runTests(params?: Record<string, any>): Promise<any>;
+  runSingleTest(params?: Record<string, any>): Promise<any>;
+  createTickets(params?: Record<string, any>): Promise<any>;
+  getAllBugs(params?: Record<string, any>): Promise<any>;
+  getUnresolvedBugs(params?: Record<string, any>): Promise<any>;
+  getResolvedBugs(params?: Record<string, any>): Promise<any>;
+  getFailedBugs(params?: Record<string, any>): Promise<any>;
+  getBugsNeedingHuman(params?: Record<string, any>): Promise<any>;
+  getBugsByStatus(params?: Record<string, any>): Promise<any>;
+  getBugsByPriority(params?: Record<string, any>): Promise<any>;
+  getBug(params?: Record<string, any>): Promise<any>;
+  getBugCount(params?: Record<string, any>): Promise<any>;
+  getBugCountByStatus(params?: Record<string, any>): Promise<any>;
+  searchBugs(params?: Record<string, any>): Promise<any>;
+  getOldestBug(params?: Record<string, any>): Promise<any>;
+  getNewestBug(params?: Record<string, any>): Promise<any>;
+  escalate(params?: Record<string, any>): Promise<any>;
+  reassign(params?: Record<string, any>): Promise<any>;
+  retryBug(params?: Record<string, any>): Promise<any>;
+  getBugAttempts(params?: Record<string, any>): Promise<any>;
+  bulkResolve(params?: Record<string, any>): Promise<any>;
+  proposeFix(params?: Record<string, any>): Promise<any>;
+  applyFix(params?: Record<string, any>): Promise<any>;
+  checkPermission(params?: Record<string, any>): Promise<any>;
+  getPermissionAuditLog(params?: Record<string, any>): Promise<any>;
+  watchProcess(params?: Record<string, any>): Promise<any>;
+  watchLogFile(params?: Record<string, any>): Promise<any>;
+  stopWatch(params?: Record<string, any>): Promise<any>;
+  listActiveWatchers(params?: Record<string, any>): Promise<any>;
+  getTokenConsumption(params?: Record<string, any>): Promise<any>;
+  getTokenConsumptionByProvider(params?: Record<string, any>): Promise<any>;
+  getLlmCallHistory(params?: Record<string, any>): Promise<any>;
+  getLlmProviderStatus(params?: Record<string, any>): Promise<any>;
+  cleanup(params?: Record<string, any>): Promise<any>;
+  purgeRepo(params?: Record<string, any>): Promise<any>;
+  getDatabaseStats(params?: Record<string, any>): Promise<any>;
+  exportBugs(params?: Record<string, any>): Promise<any>;
+  reapStaleBugs(params?: Record<string, any>): Promise<any>;
+  rotateLogs(params?: Record<string, any>): Promise<any>;
+  getCrashLog(params?: Record<string, any>): Promise<any>;
+  getNotificationConfig(params?: Record<string, any>): Promise<any>;
+  listRepos(params?: Record<string, any>): Promise<any>;
+  healthCheck(params?: Record<string, any>): Promise<any>;
 }
