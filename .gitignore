@@ -9,3 +9,6 @@ __pycache__/
 data/
 repos/
 .venv/
+dist/
+build/
+*.egg-info/
