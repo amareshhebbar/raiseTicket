@@ -1,4 +1,3 @@
-
 ```
 ██████    ████████    ████████  ██      ██  ██████████  ██            ██████      ██████    ████████    
 ██  ██    ████████    ████████  ██      ██  █ ████████  ██            ██████      ██████    █ ██████    
@@ -19,9 +18,11 @@ tickets via an LLM, with automatic priority fallback across providers.
 Stores them. Hands them out one at a time. Optionally proposes and
 applies fixes under an explicit, auditable permission allowlist.
 
+![PyPI](https://img.shields.io/pypi/v/issueloop)
+![npm](https://img.shields.io/npm/v/issueloop)
+![CI](https://github.com/onenot8/issueLoop/actions/workflows/ci.yml/badge.svg)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
-![status](https://img.shields.io/badge/status-phase--2-orange)
 
 ---
 
@@ -35,12 +36,8 @@ to manually triage which failures are actually distinct problems.
 
 ## Install
 
-Not yet on PyPI — install from git:
-
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install "git+https://github.com/onenot8/issueLoop@phase-2"
+pip install issueloop
 ```
 
 Or for local development:
