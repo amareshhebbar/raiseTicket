@@ -1,83 +1,74 @@
 import json
-import re
+import subprocess
 import sys
-import uuid
+from datetime import datetime, timezone
+from pathlib import Path
 
-from . import llm, log_reader
-from .agent_state import Ticket, TicketPriority
-from .config import get_config
-from .db import get_backend
-
-SPLIT_PROMPT = """You are triaging a failed command's output. Decide if it \
-represents ONE error or SEVERAL independent, unrelated errors bundled \
-together. Respond ONLY with a JSON list, one object per independent \
-error, each with a single field "summary" (one sentence, plain English, \
-no stack trace dump, no markdown).
-
-Command: {command}
-Exit code: {exit_code}
-Stderr (tail): {stderr_tail}
-"""
-
-_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
+ROOT = Path(__file__).resolve().parent.parent
+MANIFEST_PATH = ROOT / "data" / "test_manifest.json"
 
 
-def _strip_code_fences(raw: str) -> str:
-    return _FENCE_RE.sub("", raw).strip()
+def load_repo_manifest(repo_name: str):
+    manifest = json.loads(MANIFEST_PATH.read_text())
+    for entry in manifest["repos"]:
+        if entry["name"] == repo_name:
+            return entry
+    raise ValueError(f"no manifest entry for repo '{repo_name}' in {MANIFEST_PATH}")
 
 
-def _fallback_summary(entry: dict) -> str:
-    return f"'{entry['command']}' failed with exit code {entry['exit_code']}"
+_load_repo_manifest = load_repo_manifest  
 
 
-def _split_errors(entry: dict):
-    prompt = SPLIT_PROMPT.format(
-        command=entry["command"], exit_code=entry["exit_code"], stderr_tail=entry["stderr_tail"],
+def _run_one(test: dict, repo_name: str, repo_path: Path, log_path: Path):
+    proc = subprocess.run(
+        test["command"], shell=True, cwd=str(repo_path),
+        capture_output=True, text=True, timeout=600,
     )
-    raw = llm.chat(prompt)
-    cleaned = _strip_code_fences(raw)
-    try:
-        parsed = json.loads(cleaned)
-        summaries = [
-            item["summary"]
-            for item in parsed
-            if isinstance(item, dict) and item.get("summary")
-        ]
-        if summaries:
-            return summaries
-    except (json.JSONDecodeError, KeyError, TypeError):
-        pass
-    return [_fallback_summary(entry)]
+    result = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "repo": repo_name,
+        "command": test["command"],
+        "test_id": test["id"],
+        "blocking": test["blocking"],
+        "exit_code": proc.returncode,
+        "stdout_tail": proc.stdout[-2000:],
+        "stderr_tail": proc.stderr[-2000:],
+    }
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with log_path.open("a") as f:
+        f.write(json.dumps(result) + "\n")
+    return result
 
 
-def create_tickets_for_repo(repo_name: str):
-    cfg = get_config()
-    backend = get_backend(cfg.database, path=cfg.database_path)
+def run_tests(repo_name: str, stop_on_first_blocking_failure: bool = False):
+    entry = load_repo_manifest(repo_name)
+    repo_path = ROOT / entry["local_path"]
+    log_path = ROOT / "data" / "logs" / f"run_{repo_name}.jsonl"
 
-    created = []
-    for entry in log_reader.read_errors(repo_name):
-        summaries = _split_errors(entry)
-        priority = TicketPriority.BLOCKING if entry["blocking"] else TicketPriority.NORMAL
-        for summary in summaries:
-            ticket = Ticket(
-                id=str(uuid.uuid4()),
-                repo=repo_name,
-                error_summary=summary,
-                raw_log_ref=f"run_{repo_name}.jsonl:{entry['test_id']}:{entry['timestamp']}",
-                priority=priority,
-                command=entry["command"],
-                test_id=entry["test_id"],
-            )
-            backend.create_ticket(ticket)
-            created.append(ticket)
-    return created
+    results = []
+    for test in sorted(entry["test_types"], key=lambda t: t["priority"]):
+        result = _run_one(test, repo_name, repo_path, log_path)
+        results.append(result)
+        if result["exit_code"] != 0 and test["blocking"] and stop_on_first_blocking_failure:
+            break
+
+    return results
+
+
+def run_single_test(repo_name: str, test_id: str):
+    entry = load_repo_manifest(repo_name)
+    test = next((t for t in entry["test_types"] if t["id"] == test_id), None)
+    if test is None:
+        raise ValueError(f"test_id '{test_id}' not found in manifest for repo '{repo_name}'")
+    repo_path = ROOT / entry["local_path"]
+    log_path = ROOT / "data" / "logs" / f"run_{repo_name}.jsonl"
+    return _run_one(test, repo_name, repo_path, log_path)
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("usage: python -m issueloop.ticket_creator <repo_name>")
+        print("usage: python -m issueloop.test_runner <repo_name>")
         sys.exit(1)
-    tickets = create_tickets_for_repo(sys.argv[1])
-    print(f"created {len(tickets)} ticket(s)")
-    for t in tickets:
-        print(f"  [{t.priority.value}] {t.error_summary}")
+    for r in run_tests(sys.argv[1]):
+        status = "OK" if r["exit_code"] == 0 else "FAIL"
+        print(f"[{status}] {r['test_id']} (exit {r['exit_code']})")
