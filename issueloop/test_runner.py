@@ -16,9 +16,6 @@ def load_repo_manifest(repo_name: str):
     raise ValueError(f"no manifest entry for repo '{repo_name}' in {MANIFEST_PATH}")
 
 
-_load_repo_manifest = load_repo_manifest  
-
-
 def _run_one(test: dict, repo_name: str, repo_path: Path, log_path: Path):
     proc = subprocess.run(
         test["command"], shell=True, cwd=str(repo_path),
