@@ -30,3 +30,6 @@ issueloop = "issueloop.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["issueloop*"]
+
+[tool.setuptools.package-data]
+issueloop = ["_defaults/*.yaml"]
