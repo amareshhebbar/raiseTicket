@@ -28,6 +28,10 @@ def load_gitignore_spec(repo_path: Path):
 
 
 def walk_repo(repo_path: Path):
+    if not repo_path.exists():
+        raise FileNotFoundError(f"repo path does not exist: {repo_path}")
+    if not repo_path.is_dir():
+        raise NotADirectoryError(f"repo path is not a directory: {repo_path}")
     spec = load_gitignore_spec(repo_path)
     files = []
     lang_counts: dict[str, int] = {}
