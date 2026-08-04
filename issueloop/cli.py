@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+import time
 
 import issueloop
 from . import check_env
@@ -30,6 +31,13 @@ def main():
 
     p_serve = sub.add_parser("serve", help="start the local HTTP bridge for non-Python callers")
     p_serve.add_argument("--port", type=int, default=8787)
+
+    p_watch = sub.add_parser("watch", help="watch a live process or log file for errors, in the foreground")
+    p_watch.add_argument("repo_name")
+    p_watch.add_argument("--command", dest="watch_command", default=None, help="command to spawn and own (Mode A)")
+    p_watch.add_argument("--log-file", dest="watch_log_file", default=None, help="existing log file to tail (Mode B)")
+    p_watch.add_argument("--cwd", default=None, help="working directory for --command (Mode A only)")
+    p_watch.add_argument("--debounce", type=float, default=3.0, help="seconds of quiet before flushing a detected error block")
 
     args = parser.parse_args()
 
@@ -70,6 +78,33 @@ def main():
     if args.command == "serve":
         from . import server
         server.serve(port=args.port)
+        return 0
+
+    if args.command == "watch":
+        if not args.watch_command and not args.watch_log_file:
+            print("error: specify either --command or --log-file")
+            return 1
+        if args.watch_command and args.watch_log_file:
+            print("error: specify only one of --command or --log-file")
+            return 1
+
+        if args.watch_command:
+            handle = issueloop.watch_process(
+                args.repo_name, args.watch_command, cwd=args.cwd, debounce_seconds=args.debounce,
+            )
+            print(f"watching process for '{args.repo_name}': {args.watch_command}  (Ctrl+C to stop)")
+        else:
+            handle = issueloop.watch_log_file(
+                args.repo_name, args.watch_log_file, debounce_seconds=args.debounce,
+            )
+            print(f"watching log file for '{args.repo_name}': {args.watch_log_file}  (Ctrl+C to stop)")
+
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\nstopping watcher...")
+            issueloop.stop_watch(handle)
         return 0
 
     return 1

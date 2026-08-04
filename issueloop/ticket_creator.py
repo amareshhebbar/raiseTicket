@@ -16,6 +16,7 @@ no stack trace dump, no markdown).
 
 Command: {command}
 Exit code: {exit_code}
+Stdout (tail): {stdout_tail}
 Stderr (tail): {stderr_tail}
 """
 
@@ -32,7 +33,10 @@ def _fallback_summary(entry: dict) -> str:
 
 def _split_errors(entry: dict):
     prompt = SPLIT_PROMPT.format(
-        command=entry["command"], exit_code=entry["exit_code"], stderr_tail=entry["stderr_tail"],
+        command=entry["command"],
+        exit_code=entry["exit_code"],
+        stdout_tail=entry.get("stdout_tail", ""),
+        stderr_tail=entry.get("stderr_tail", ""),
     )
     raw = llm.chat(prompt)
     cleaned = _strip_code_fences(raw)
