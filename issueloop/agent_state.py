@@ -40,9 +40,11 @@ class Ticket:
     attempts: int = 0
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     resolved_at: Optional[datetime] = None
+    dispensed_at: Optional[datetime] = None
     escalation_summary: Optional[str] = None
     command: Optional[str] = None
     test_id: Optional[str] = None
+    proposed_fix: Optional[str] = None
 
 
 @dataclass

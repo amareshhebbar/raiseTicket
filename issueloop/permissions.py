@@ -7,8 +7,9 @@ from typing import Optional
 
 import yaml
 
+from .config_paths import resolve_config_path
+
 ROOT = Path(__file__).resolve().parent.parent
-PERMISSION_PATH = ROOT / "config" / "permission.yaml"
 MANIFEST_PATH = ROOT / "data" / "test_manifest.json"
 AUDIT_LOG = ROOT / "data" / "logs" / "permission_audit.jsonl"
 
@@ -18,9 +19,10 @@ class PermissionDenied(Exception):
 
 
 def _load_config() -> dict:
-    if not PERMISSION_PATH.exists():
+    permission_path = resolve_config_path("permission.yaml")
+    if not permission_path.exists():
         return {"global": {"allowed_exact": [], "allowed_patterns": []}, "per_repo": {}}
-    return yaml.safe_load(PERMISSION_PATH.read_text()) or {}
+    return yaml.safe_load(permission_path.read_text()) or {}
 
 
 def _test_manifest_commands(repo: str) -> set[str]:
@@ -81,3 +83,12 @@ def run_guarded(cmd: str, repo: str, cwd: Optional[Path] = None, timeout: int = 
         text=True,
         timeout=timeout,
     )
+
+
+def get_permission_audit_log(repo: Optional[str] = None, limit: int = 50) -> list:
+    if not AUDIT_LOG.exists():
+        return []
+    entries = [json.loads(l) for l in AUDIT_LOG.read_text().splitlines() if l.strip()]
+    if repo:
+        entries = [e for e in entries if e["repo"] == repo]
+    return entries[-limit:]

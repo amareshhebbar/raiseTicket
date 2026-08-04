@@ -1,0 +1,5 @@
+global:
+  allowed_exact: []
+  allowed_patterns: []
+
+per_repo: {}
