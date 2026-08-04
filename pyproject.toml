@@ -4,12 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "issueloop"
-version = "0.2.0"
+version = "0.2.1"
 description = "Finds failing tests, splits failures into independent tickets, stores them, hands them out one at a time."
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "onenot8" }]
+keywords = ["testing", "tickets", "bug-tracking", "ci", "llm", "automation", "test-runner", "monitoring"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Bug Tracking",
+]
 dependencies = [
     "requests",
     "pyyaml",
