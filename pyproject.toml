@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "issueloop"
-version = "0.2.1"
+version = "0.3.0"
 description = "Finds failing tests, splits failures into independent tickets, stores them, hands them out one at a time."
 readme = "README.md"
 license = "MIT"
