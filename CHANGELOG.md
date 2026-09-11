@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1] - 2026-09-11
+### Fixed
+- create_tickets_for_repo() was entirely missing from ticket_creator.py
+  (corrupted, unreachable dead code from a bad merge). issueloop.create_tickets()
+  raised AttributeError on every call. Rebuilt the file.
+
 ## [0.3.0] - 2026-09-10
 ### Fixed
 - Published wheel actually matches `main` this time — `0.2.1` was a
